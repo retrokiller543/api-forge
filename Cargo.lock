@@ -25,7 +25,7 @@ checksum = "10f00e1f6e58a40e807377c75c6a7f97bf9044fab57816f2414e6f5f4499d7b8"
 
 [[package]]
 name = "api-forge"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "api-forge-macro",

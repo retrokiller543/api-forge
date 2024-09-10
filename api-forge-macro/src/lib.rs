@@ -2,7 +2,7 @@ use darling::{FromDeriveInput, FromField};
 use proc_macro::TokenStream;
 use proc_macro2::Ident;
 use quote::quote;
-use syn::{parse_macro_input, parse_quote, DeriveInput, LitStr};
+use syn::{parse_macro_input, DeriveInput, LitStr};
 
 #[derive(Debug, FromDeriveInput, Clone)]
 #[darling(attributes(request))]
@@ -82,7 +82,7 @@ pub fn derive_request(input: TokenStream) -> TokenStream {
     let authentication_method = args
         .authentication
         .unwrap_or_else(|| Ident::new("None", proc_macro2::Span::call_site()));
-    let path_parameters = args.path_parameters.unwrap_or_else(|| vec![]);
+    let path_parameters = args.path_parameters.unwrap_or(Vec::new());
     let path_parameters = path_parameters
         .iter()
         .map(|p| p.value())
