@@ -1,8 +1,12 @@
 [package]
 name = "api-forge-macro"
-version = "0.0.0"
+version = "0.0.2"
 authors = ["Emil Schütt <emil.schutt@gmail.com>"]
 keywords = ["proc_macro", "procmacro"]
+description = "A proc macro for constructing Request structs"
+license = "MIT"
+repository = "https://github.com/retrokiller543/api-forge"
+readme = "../README.md"
 edition = "2021"
 
 [lib]
