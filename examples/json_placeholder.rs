@@ -1,16 +1,11 @@
-use api_forge::{ApiForgeError, Request};
-use reqwest::Response;
+use api_forge::ApiRequest;
 use serde::{Deserialize, Serialize};
- // Async runtime
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GetPosts;
 
-impl Request<Vec<Post>> for GetPosts {
+impl ApiRequest<Vec<Post>> for GetPosts {
     const ENDPOINT: &'static str = "/posts";
-    async fn from_response(resp: Response) -> Result<Self::Response, ApiForgeError> {
-        Ok(resp.json().await?)
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -22,19 +17,19 @@ pub struct Post {
     pub body: String,
 }
 
-#[tokio::main]
-async fn main() {
-    // Initialize the request.
-    let request = GetPosts;
+    #[tokio::main]
+    async fn main() {
+        // Initialize the request.
+        let request = GetPosts;
 
-    // Define the base URL (e.g., JSONPlaceholder API for testing).
-    let base_url = "https://jsonplaceholder.typicode.com";
+        // Define the base URL (e.g., JSONPlaceholder API for testing).
+        let base_url = "https://jsonplaceholder.typicode.com";
 
-    // Send the request and await the response.
-    let result = request.send_and_parse(base_url, None, None).await;
+        // Send the request and await the response.
+        let result = request.send_and_parse(base_url, None, None).await;
 
-    match result {
-        Ok(post) => println!("Successfully fetched post: {:?}", post),
-        Err(e) => eprintln!("Error occurred: {:?}", e),
+        match result {
+            Ok(post) => println!("Successfully fetched post: {:?}", post),
+            Err(e) => eprintln!("Error occurred: {:?}", e),
+        }
     }
-}

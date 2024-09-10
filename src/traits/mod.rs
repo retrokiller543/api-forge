@@ -2,7 +2,8 @@ use crate::error::ApiForgeError;
 use reqwest::header::HeaderMap;
 use serde::Serialize;
 use std::fmt::Debug;
-use tracing::{debug, info, warn};
+use serde::de::DeserializeOwned;
+use tracing::{debug, error, info, warn};
 
 /// Enum representing different methods for transmitting data in an HTTP request.
 pub enum DataTransmissionMethod {
@@ -19,7 +20,7 @@ pub enum AuthenticationMethod {
     None,   // No authentication.
 }
 
-/// `Request` trait.
+/// `ApiRequest` trait.
 ///
 /// This trait defines a structure for making HTTP requests with custom serialization and response handling.
 /// It is intended to be implemented by request types that are serializable and can generate HTTP requests.
@@ -50,7 +51,7 @@ pub enum AuthenticationMethod {
 /// use serde::{Serialize, Deserialize};
 /// use reqwest::header::HeaderMap;
 /// use reqwest::Method;
-/// use api_forge::{Request, DataTransmissionMethod, AuthenticationMethod, ApiForgeError};
+/// use api_forge::{ApiRequest, DataTransmissionMethod, AuthenticationMethod, ApiForgeError};
 ///
 /// #[derive(Serialize, Debug)]
 /// struct MyRequest {
@@ -72,12 +73,12 @@ pub enum AuthenticationMethod {
 ///     }
 /// }
 ///
-/// impl Request<MyResponse> for MyRequest {
+/// impl ApiRequest<MyResponse> for MyRequest {
 ///     const ENDPOINT: &'static str = "/api/my_endpoint";
 ///     const METHOD: Method = Method::POST; // Override HTTP method if necessary
 ///     const DATA_TRANSMISSION_METHOD: DataTransmissionMethod = DataTransmissionMethod::Json; // Send data as JSON
 ///     const AUTHENTICATION_METHOD: AuthenticationMethod = AuthenticationMethod::Bearer; // Use Bearer authentication
-///     async fn from_response(resp: reqwest::Response) -> Result<Self::Response, ApiForgeError> where <Self as Request<MyResponse>>::Response: From<reqwest::Response> {
+///     async fn from_response(resp: reqwest::Response) -> Result<Self::Response, ApiForgeError> where <Self as ApiRequest<MyResponse>>::Response: From<reqwest::Response> {
 ///         resp.json().await
 ///     }
 /// }
@@ -99,13 +100,11 @@ pub enum AuthenticationMethod {
 /// }
 /// ```
 #[allow(async_fn_in_trait)]
-pub trait Request<Res>
+pub trait ApiRequest<Res>
 where
     Self: Serialize + Debug,
+    Res: Default + DeserializeOwned
 {
-    /// The type of the response, which must implement `From<reqwest::Response>`.
-    type Response = Res;
-
     /// A static string representing the endpoint for the request.
     const ENDPOINT: &'static str;
 
@@ -120,7 +119,41 @@ where
     /// The default is `AuthenticationMethod::None`.
     const AUTHENTICATION_METHOD: AuthenticationMethod = AuthenticationMethod::None;
 
-    async fn from_response(resp: reqwest::Response) -> Result<Self::Response, ApiForgeError>;
+    async fn from_response(resp: reqwest::Response) -> Result<Res, ApiForgeError> {
+        // Check for empty body or 204 No Content status
+        if resp.content_length().unwrap_or(0) == 0 || resp.status() == reqwest::StatusCode::NO_CONTENT {
+            debug!("Response is empty or 204 No Content.");
+            return Ok(Res::default());
+        }
+
+        // Determine response format based on Content-Type header
+        if let Some(content_type) = resp.headers().get(reqwest::header::CONTENT_TYPE) {
+            let content_type_str = content_type.to_str().unwrap_or("");
+            return if content_type_str.contains("application/json") {
+                println!("Response content type is application/json.");
+                debug!("Parsing response as JSON.");
+                resp.json().await.map_err(|e| ApiForgeError::ParseError(e))
+            } else if content_type_str.contains("text/plain") {
+                println!("Response content type is text/plain.");
+                error!("Response content type is text/plain, which is not supported.");
+                Err(ApiForgeError::UnsupportedContentType(content_type_str.to_string()))
+            } else if content_type_str.contains("application/xml") || content_type_str.contains("text/xml") {
+                println!("Response content type is application/xml or text/xml.");
+                debug!("Parsing response as XML.");
+                let text = resp.text().await.map_err(|e| ApiForgeError::ParseError(e))?;
+                let xml = serde_xml_rust::from_str(text.as_str())?;
+                Ok(xml)
+            } else {
+                println!("Response content type is unrecognized.");
+                warn!("Unrecognized content type: {}", content_type_str);
+                Err(ApiForgeError::UnsupportedContentType(content_type_str.to_string()))
+            }
+        }
+
+        // Default to trying JSON parsing
+        debug!("Falling back to JSON parsing.");
+        resp.json::<Res>().await.map_err(|e| ApiForgeError::ParseError(e))
+    }
 
     /// Optional: Provides multipart form data for file uploads.
     fn multipart_form_data(&self) -> reqwest::multipart::Form {
@@ -194,7 +227,7 @@ where
         base_url: &str,
         headers: Option<HeaderMap>,
         token: Option<(String, Option<String>)>,
-    ) -> Result<Self::Response, ApiForgeError> {
+    ) -> Result<Res, ApiForgeError> {
         let response = self.send_request(base_url, headers, token).await?;
 
         if response.error_for_status_ref().is_err() {

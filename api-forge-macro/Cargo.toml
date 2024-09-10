@@ -1,0 +1,16 @@
+[package]
+name = "api-forge-macro"
+version = "0.0.0"
+authors = ["Emil Schütt <emil.schutt@gmail.com>"]
+keywords = ["proc_macro", "procmacro"]
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1"
+proc-macro2 = "1.0"
+syn = "2.0.77"
+darling = "0.20.10"
+
