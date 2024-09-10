@@ -6,4 +6,3 @@ pub use api_forge_macro::Request;
 
 pub mod error;
 pub mod traits;
-

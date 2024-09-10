@@ -1,6 +1,8 @@
-use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+
 use api_forge::ApiRequest;
 use api_forge_macro::Request;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Request)]
 #[request(endpoint = "/posts", response_type = Posts)]
@@ -22,14 +24,23 @@ pub struct CreatePost {
     pub user_id: i32,
     pub title: String,
     pub body: String,
+
+    #[request(header_name = "test")]
+    #[serde(skip)]
+    header: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, Request)]
-#[request(endpoint = "/posts/1", method = DELETE, response_type = Post)]
-pub struct DeletePost;
+#[request(endpoint = "/posts/{id}", response_type = EmptyResponse, method = DELETE, path_parameters = ["id"])]
+pub struct DeletePost {
+    pub id: i32,
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Posts(Vec<Post>);
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct EmptyResponse(HashMap<String, String>);
 
 #[tokio::main]
 async fn main() {
@@ -52,6 +63,7 @@ async fn main() {
         user_id: 1,
         title: "Test".to_string(),
         body: "Test".to_string(),
+        header: Some("test-header".to_string()),
     };
 
     // Send the request and await the response.
@@ -63,7 +75,7 @@ async fn main() {
     }
 
     // Initialize the request.
-    let request = DeletePost;
+    let request = DeletePost { id: 100 };
 
     // Send the request and await the response.
     let result = request.send_and_parse(base_url, None, None).await;

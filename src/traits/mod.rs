@@ -1,8 +1,8 @@
 use crate::error::ApiForgeError;
 use reqwest::header::HeaderMap;
+use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::fmt::Debug;
-use serde::de::DeserializeOwned;
 use tracing::{debug, error, info, warn};
 
 /// Enum representing different methods for transmitting data in an HTTP request.
@@ -103,7 +103,7 @@ pub enum AuthenticationMethod {
 pub trait ApiRequest<Res>
 where
     Self: Serialize + Debug,
-    Res: Default + DeserializeOwned
+    Res: Default + DeserializeOwned,
 {
     /// A static string representing the endpoint for the request.
     const ENDPOINT: &'static str;
@@ -121,7 +121,9 @@ where
 
     async fn from_response(resp: reqwest::Response) -> Result<Res, ApiForgeError> {
         // Check for empty body or 204 No Content status
-        if resp.content_length().unwrap_or(0) == 0 || resp.status() == reqwest::StatusCode::NO_CONTENT {
+        if resp.content_length().unwrap_or(0) == 0
+            || resp.status() == reqwest::StatusCode::NO_CONTENT
+        {
             debug!("Response is empty or 204 No Content.");
             return Ok(Res::default());
         }
@@ -130,29 +132,36 @@ where
         if let Some(content_type) = resp.headers().get(reqwest::header::CONTENT_TYPE) {
             let content_type_str = content_type.to_str().unwrap_or("");
             return if content_type_str.contains("application/json") {
-                println!("Response content type is application/json.");
                 debug!("Parsing response as JSON.");
-                resp.json().await.map_err(|e| ApiForgeError::ParseError(e))
+                resp.json().await.map_err(ApiForgeError::ParseError)
             } else if content_type_str.contains("text/plain") {
-                println!("Response content type is text/plain.");
                 error!("Response content type is text/plain, which is not supported.");
-                Err(ApiForgeError::UnsupportedContentType(content_type_str.to_string()))
-            } else if content_type_str.contains("application/xml") || content_type_str.contains("text/xml") {
-                println!("Response content type is application/xml or text/xml.");
+                Err(ApiForgeError::UnsupportedContentType(
+                    content_type_str.to_string(),
+                ))
+            } else if content_type_str.contains("application/xml")
+                || content_type_str.contains("text/xml")
+            {
                 debug!("Parsing response as XML.");
-                let text = resp.text().await.map_err(|e| ApiForgeError::ParseError(e))?;
+                let text = resp
+                    .text()
+                    .await
+                    .map_err(ApiForgeError::ParseError)?;
                 let xml = serde_xml_rust::from_str(text.as_str())?;
                 Ok(xml)
             } else {
-                println!("Response content type is unrecognized.");
                 warn!("Unrecognized content type: {}", content_type_str);
-                Err(ApiForgeError::UnsupportedContentType(content_type_str.to_string()))
-            }
+                Err(ApiForgeError::UnsupportedContentType(
+                    content_type_str.to_string(),
+                ))
+            };
         }
 
         // Default to trying JSON parsing
         debug!("Falling back to JSON parsing.");
-        resp.json::<Res>().await.map_err(|e| ApiForgeError::ParseError(e))
+        resp.json::<Res>()
+            .await
+            .map_err(ApiForgeError::ParseError)
     }
 
     /// Optional: Provides multipart form data for file uploads.
