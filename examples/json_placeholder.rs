@@ -1,7 +1,7 @@
 use api_forge::{ApiForgeError, Request};
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
-use tokio; // Async runtime
+ // Async runtime
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GetPosts;

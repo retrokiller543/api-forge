@@ -1,7 +1,6 @@
 use crate::error::ApiForgeError;
 use reqwest::header::HeaderMap;
 use serde::Serialize;
-use std::collections::HashMap;
 use std::fmt::Debug;
 use tracing::{debug, info, warn};
 

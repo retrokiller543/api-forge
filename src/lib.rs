@@ -2,8 +2,6 @@
 
 pub use crate::error::*;
 pub use crate::traits::*;
-use reqwest::header::HeaderMap;
-use reqwest::Response;
 pub mod error;
 pub mod traits;
 /*
