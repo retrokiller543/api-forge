@@ -1,6 +1,6 @@
 [package]
 name = "api-forge-macro"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["Emil Schütt <emil.schutt@gmail.com>"]
 keywords = ["proc_macro", "procmacro"]
 description = "A proc macro for constructing Request structs"

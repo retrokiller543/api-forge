@@ -152,7 +152,11 @@ pub fn derive_request(input: TokenStream) -> TokenStream {
                     all_headers.extend(headers);
                 }
 
-                builder.headers(all_headers)
+                builder = builder.headers(all_headers);
+
+                tracing::debug!("Generated request: {:#?}", builder);
+                
+                builder
             }
         }
     };

@@ -120,6 +120,8 @@ where
     const AUTHENTICATION_METHOD: AuthenticationMethod = AuthenticationMethod::None;
 
     async fn from_response(resp: reqwest::Response) -> Result<Res, ApiForgeError> {
+        debug!("Received response: {:#?}", resp);
+
         // Check for empty body or 204 No Content status
         if resp.content_length().unwrap_or(0) == 0
             || resp.status() == reqwest::StatusCode::NO_CONTENT
@@ -238,6 +240,9 @@ where
         token: Option<(String, Option<String>)>,
     ) -> Result<Res, ApiForgeError> {
         let response = self.send_request(base_url, headers, token).await?;
+
+        debug!("Response status: {}", &response.status());
+        debug!("Response headers: {:#?}", &response.headers());
 
         if response.error_for_status_ref().is_err() {
             Err(ApiForgeError::ResponseError(response.status()))
