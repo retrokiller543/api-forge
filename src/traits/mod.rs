@@ -51,9 +51,10 @@ pub enum AuthenticationMethod {
 /// use serde::{Serialize, Deserialize};
 /// use reqwest::header::HeaderMap;
 /// use reqwest::Method;
-/// use api_forge::{ApiRequest, DataTransmissionMethod, AuthenticationMethod, ApiForgeError};
+/// use api_forge::{ApiRequest, Request};
 ///
-/// #[derive(Serialize, Debug)]
+/// #[derive(Serialize, Debug, Request)]
+/// #[request(endpoint = "/my_endpoint")]
 /// struct MyRequest {
 ///     field1: String,
 ///     field2: i32,
@@ -62,41 +63,6 @@ pub enum AuthenticationMethod {
 /// #[derive(Deserialize, Debug, Default)]
 /// struct MyResponse {
 ///     result: String,
-/// }
-///
-/// impl From<reqwest::Response> for MyResponse {
-///     fn from(resp: reqwest::Response) -> Self {
-///         // Convert the response into your response structure
-///         resp.json().unwrap_or_else(|_| MyResponse {
-///             result: "Error parsing response".into(),
-///         })
-///     }
-/// }
-///
-/// impl ApiRequest<MyResponse> for MyRequest {
-///     const ENDPOINT: &'static str = "/api/my_endpoint";
-///     const METHOD: Method = Method::POST; // Override HTTP method if necessary
-///     const DATA_TRANSMISSION_METHOD: DataTransmissionMethod = DataTransmissionMethod::Json; // Send data as JSON
-///     const AUTHENTICATION_METHOD: AuthenticationMethod = AuthenticationMethod::Bearer; // Use Bearer authentication
-///     async fn from_response(resp: reqwest::Response) -> Result<Self::Response, ApiForgeError> where <Self as ApiRequest<MyResponse>>::Response: From<reqwest::Response> {
-///         resp.json().await
-///     }
-/// }
-///
-/// #[tokio::main]
-/// async fn main() {
-///     let request = MyRequest {
-///         field1: "Test".to_string(),
-///         field2: 42,
-///     };
-///
-///     let headers = HeaderMap::new();
-///     let token = Some(("my_token".to_string(), None));
-///
-///     match request.send_and_parse("https://api.example.com", Some(headers), token).await {
-///         Ok(response) => println!("Success: {:?}", response),
-///         Err(e) => eprintln!("Request failed: {:?}", e),
-///     }
 /// }
 /// ```
 #[allow(async_fn_in_trait)]
@@ -145,10 +111,7 @@ where
                 || content_type_str.contains("text/xml")
             {
                 debug!("Parsing response as XML.");
-                let text = resp
-                    .text()
-                    .await
-                    .map_err(ApiForgeError::ParseError)?;
+                let text = resp.text().await.map_err(ApiForgeError::ParseError)?;
                 let xml = serde_xml_rust::from_str(text.as_str())?;
                 Ok(xml)
             } else {
@@ -161,9 +124,7 @@ where
 
         // Default to trying JSON parsing
         debug!("Falling back to JSON parsing.");
-        resp.json::<Res>()
-            .await
-            .map_err(ApiForgeError::ParseError)
+        resp.json::<Res>().await.map_err(ApiForgeError::ParseError)
     }
 
     /// Optional: Provides multipart form data for file uploads.

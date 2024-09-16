@@ -155,7 +155,7 @@ pub fn derive_request(input: TokenStream) -> TokenStream {
                 builder = builder.headers(all_headers);
 
                 tracing::debug!("Generated request: {:#?}", builder);
-                
+
                 builder
             }
         }
