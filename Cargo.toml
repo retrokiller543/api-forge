@@ -17,7 +17,7 @@ repository = "https://github.com/retrokiller543/api-forge"
 [dependencies]
 anyhow = "1.0.89"
 tracing = "0.1.40"
-thiserror = "1.0.63"
+thiserror = "1.0.68"
 reqwest = { version = "0.12", features = ["json", "multipart"]}
 tokio = { version = "1.40", optional = true, features = ["full"] }
 wasm-bindgen-futures = { version = "0.4", optional = true }
