@@ -1,5 +1,5 @@
 [workspace]
-members = ["api-forge-macro", "."]
+members = ["api-forge-macro", ".", "ai-test"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]

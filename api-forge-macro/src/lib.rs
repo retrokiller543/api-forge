@@ -25,6 +25,8 @@ struct RequestArgs {
 
     #[darling(default, rename = "path_parameters")]
     path_parameters: Option<Vec<LitStr>>,
+
+    accept: Option<LitStr>,
 }
 
 #[derive(Debug, FromField, Clone)]
@@ -92,6 +94,11 @@ pub fn derive_request(input: TokenStream) -> TokenStream {
         .map(|p| Ident::new(p, proc_macro2::Span::call_site()))
         .collect::<Vec<_>>();
 
+    let accept = args.accept.unwrap_or(LitStr::new(
+        "application/json",
+        proc_macro2::Span::call_site(),
+    ));
+
     let res_type = if response_type == Ident::new("EmptyResponse", proc_macro2::Span::call_site()) {
         quote!(())
     } else {
@@ -153,6 +160,7 @@ pub fn derive_request(input: TokenStream) -> TokenStream {
                 }
 
                 builder = builder.headers(all_headers);
+                builder = builder.header(reqwest::header::ACCEPT, #accept);
 
                 tracing::debug!("Generated request: {:#?}", builder);
 
