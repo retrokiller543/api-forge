@@ -6,3 +6,5 @@ pub use api_forge_macro::Request;
 
 pub mod error;
 pub mod traits;
+
+pub type ApiResult<T, E = ApiForgeError> = Result<T, E>;

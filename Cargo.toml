@@ -1,5 +1,5 @@
 [workspace]
-members = ["api-forge-macro", ".", "ai-test"]
+members = ["api-forge-macro", "."]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -29,7 +29,7 @@ api-forge-macro = { version = "0.0.3", path = "api-forge-macro" }
 [features]
 default = ["native"]
 native = ['tokio']
-wasm = []
+wasm = ["wasm-bindgen-futures"]
 
 [package.metadata.docs.rs]
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
